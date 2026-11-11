@@ -43,7 +43,7 @@ set -euo pipefail
 
 # 1.01 - Geral
 TimeZone="America/Sao_Paulo"
-RequiredPackages="build-essential dkms ca-certificates curl gnupg2 libxml2-utils linux-headers-$(uname -r) lsb-release nfs-common sudo qemu-guest-agent git"
+RequiredPackages="build-essential dkms ca-certificates gnupg2 libxml2-utils linux-headers-$(uname -r) lsb-release nfs-common qemu-guest-agent git"
 DockerPackages="docker-buildx-plugin docker-ce docker-ce-cli docker-compose-plugin containerd.io"
 NvidiaGpuPackages="libvulkan1"
 NvidiaCTPackages="nvidia-container-toolkit nvidia-container-toolkit-base libnvidia-container-tools libnvidia-container1"
@@ -120,6 +120,10 @@ WtTitle2="Senha SSH"
 WtGenerateSshPass="Deseja que o SSH permita o uso de senha para login (é preferível usar chaves)?"
 WtTitle3="Selecione a Versão do Driver"
 WtTitle4="Necessário reiniciar"
+WtTitle5="Instalar Docker"
+WtInstallDocker="Deseja instalar e configurar o Docker?"
+WtTitle6="Drivers de GPUs"
+WtInstallGPUDrivers="Deseja instalar e configurar drivers de GPUs?"
 WtRebootNow="É necessário reiniciar para aplicar o bloqueio do nouveau antes de instalar os drivers.\nO sistema irá reiniciar agora. Após iniciado, execute o script novamente para dar continuidade à configuração..."
 
 # 1.05 - Mensagens
@@ -162,7 +166,7 @@ MsgGpuDetected1="$CBB[INFO]$CBY - GPU$CG NVIDIA$CBY detectada.$Reset\n"
 MsgGpuDetected2="$CBB[INFO]$CBY - GPU$CR AMD$CBY detectada.$Reset\n"
 MsgGpuDetected3="$CBB[INFO]$CBY - GPU$CB Intel$CBY detectada.$Reset\n"
 MsgNoGpu="$CM[WARNING]$CBY - Nenhuma GPU suportada detectada. Ignorando configurações de drivers de vídeo$Reset\n"
-MsgDone="$CBG[SUCCESS]$CBY - Concluído!\n"
+MsgDone="$CBG[SUCCESS]$CBY - Concluído!$Reset\n"
 
 #==================================================================================================
 #                                    02 - Definição de Funções
@@ -275,7 +279,7 @@ ConfigureDockerWorker() {
 
 	# Pasta para realizar os bind mounts dos containers
 	printf "$MsgContainersDir"
-	install -d -o root -g docker -m 0775 "$ContainersDataDir"
+	install -d -o root -g docker -m 2770 "$ContainersDataDir"
 	printf "$MsgContainersDirAdded"
 }
 
@@ -411,25 +415,29 @@ BasicSetup
 ConfigureGrub
 DisableDesktop
 ConfigureSSH
-InstallDocker
-ConfigureDockerWorker
 
-GpuFlavor=$(lspci | grep -i 'vga\|3d\|display')
+if whiptail --title "$WtTitle5" --yesno "$WtInstallDocker" 10 40 --yes-button "$WtYBtn" --no-button "$WtNBtn"; then
+	InstallDocker
+	ConfigureDockerWorker
+fi
 
-if echo "$GpuFlavor" | grep -qi "NVIDIA"; then
-	printf "$MsgGpuDetected1"
-	DisableNouveau
-	InstallNvidiaGpuDrivers
-	InstallNvidiaCT
-	InstallNVEncPatch
-elif echo "$GpuFlavor" | grep -qi "AMD\|ATI "; then
-	printf "$MsgGpuDetected2"
-	InstallAmdGpuDrivers
-elif echo "$GpuFlavor" | grep -qi "Intel"; then
-	printf "$MsgGpuDetected3"
-	InstallIntelGpuDrivers
-else
-	printf "$MsgNoGpu"
+if whiptail --title "$WtTitle6" --yesno "$WtInstallGPUDrivers" 10 40 --yes-button "$WtYBtn" --no-button "$WtNBtn"; then
+	GpuFlavor=$(lspci | grep -i 'vga\|3d\|display')
+	if echo "$GpuFlavor" | grep -qi "NVIDIA"; then
+		printf "$MsgGpuDetected1"
+		DisableNouveau
+		InstallNvidiaGpuDrivers
+		InstallNvidiaCT
+		InstallNVEncPatch
+	elif echo "$GpuFlavor" | grep -qi "AMD\|ATI "; then
+		printf "$MsgGpuDetected2"
+		InstallAmdGpuDrivers
+	elif echo "$GpuFlavor" | grep -qi "Intel"; then
+		printf "$MsgGpuDetected3"
+		InstallIntelGpuDrivers
+	else
+		printf "$MsgNoGpu"
+	fi
 fi
 
 EXIT_STATUS=$?
