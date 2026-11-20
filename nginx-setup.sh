@@ -1,5 +1,5 @@
 #!/bin/bash
-# set -euo pipefail
+set -euo pipefail
 
 #▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄
 #▀                                 Script de Instalação do Nginx
@@ -59,7 +59,36 @@ CBY="\033[1;93m"  #ffff00 Bright Yellow
 CBM="\033[1;95m"  #ff00ff Bright Magenta
 CBC="\033[1;96m"  #00ffff Bright Cyan
 
-# 01.04
+# 1.04
+export NEWT_COLORS=
+export NEWT_COLORS='
+	root=,black
+	window=black,white
+	border=black,white
+	shadow=,gray
+	title=magenta,white
+	actcheckbox=white,magenta
+	actlistbox=yellow,cyan
+	actsellistbox=white,magenta
+	button=white,brightmagenta
+	checkbox=black,white
+	compactbutton=black,white
+	listbox=black,white
+	textbox=black,white
+'
+
+WtYBtn="SIM"
+WtNBtn="NÃO"
+WtOkBtn="CONTINUAR"
+WtCancelBtn="CANCELAR"
+
+WtTitle="Instalação do Nginx"
+WtWelcomeText="\n⚠️  ATENÇÃO ⚠️\n\
+Estre script irá realizar uma série de modificações ao sistema, dentre elas:\n\
+  O Nginx será instalado e iniciado no boot\n\
+  O keepalived poderá ser instalado e configurado\n\
+  A GUI será desativada (apenas modo terminal)\n\
+Assim que você pressionar ENTER, o script iniciará.\n"
 
 # 01.05
 MsgErrNotRoot="$CBR[ERROR]$CBY - Este script deve ser executado como root.$Reset\n"
@@ -68,6 +97,7 @@ MsgNginxGPG="$CBB[INFO]$CBY - Adicionando chave GPG do Nginx...$Reset\n"
 MsgNginxRepo="$CBB[INFO]$CBY - Adicionando repositório do Nginx...$Reset\n"
 MsgNginxInstall="$CBB[INFO]$CBY - Instalando pacotes do Nginx:\n\t nginx$Reset\n"
 MsgNginxEnable="$CBB[INFO]$CBY - Habilitando e iniciando serviço do Nginx...$Reset\n"
+MsgDone="$CBG[SUCCESS]$CBY - Concluído!$Reset\n"
 
 #==================================================================================================
 #                                    02 - Definição de Funções
@@ -120,5 +150,17 @@ InstallNginx() {
 #==================================================================================================
 
 # 03.01
+if [[ $EUID -ne 0 ]]; then
+	printf "$MsgErrNotRoot"
+	exit 1
+fi
 
 # 03.02
+whiptail --title "$WtTitle" --msgbox "$WtWelcomeText" 12 80 --ok-button "$WtOkBtn"
+BasicSetup
+InstallNginx
+
+EXIT_STATUS=$?
+if [ $EXIT_STATUS -eq 0 ]; then
+	printf "$MsgDone"
+fi
