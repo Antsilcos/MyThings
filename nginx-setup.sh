@@ -64,6 +64,10 @@ CBC="\033[1;96m"  #00ffff Bright Cyan
 # 01.05
 MsgErrNotRoot="$CBR[ERROR]$CBY - Este script deve ser executado como root.$Reset\n"
 MsgInstallPackages="$CBB[INFO]$CBY - Instalando pacotes mínimos necessários:\n\t$CBW$RequiredPackages$Reset\n"
+MsgNginxGPG="$CBB[INFO]$CBY - Adicionando chave GPG do Nginx...$Reset\n"
+MsgNginxRepo="$CBB[INFO]$CBY - Adicionando repositório do Nginx...$Reset\n"
+MsgNginxInstall="$CBB[INFO]$CBY - Instalando pacotes do Nginx:\n\t nginx$Reset\n"
+MsgNginxEnable="$CBB[INFO]$CBY - Habilitando e iniciando serviço do Nginx...$Reset\n"
 
 #==================================================================================================
 #                                    02 - Definição de Funções
