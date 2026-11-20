@@ -87,7 +87,6 @@ WtWelcomeText="\n⚠️  ATENÇÃO ⚠️\n\
 Estre script irá realizar uma série de modificações ao sistema, dentre elas:\n\
   O Nginx será instalado e iniciado no boot\n\
   O keepalived poderá ser instalado e configurado\n\
-  A GUI será desativada (apenas modo terminal)\n\
 Assim que você pressionar ENTER, o script iniciará.\n"
 
 # 01.05
@@ -132,7 +131,7 @@ InstallNginx() {
 	# Repositório
 	printf "$MsgNginxRepo"
 	echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/nginx.gpg] $UrlNginxStableRepo \
-		$(. /etc/os-release && echo "$VERSION_CODENAME") stable" >/etc/apt/sources.list.d/nginx.list
+		 $(lsb_release -cs) nginx" >/etc/apt/sources.list.d/nginx.list
 	echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" >/etc/apt/preferences.d/99nginx
 
 	# Instalação
