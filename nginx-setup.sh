@@ -2,29 +2,29 @@
 set -euo pipefail
 
 #▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄
-#▀                                 Script de Instalação do Nginx
-#▀
-#▀        --- Nunca execute scripts da internet sem antes ler atentamente seu conteúdo! ---
-#▀ Ofereço este script sem quaisquer garantias, todos os resultados (bons ou ruins) de sua execução
-#▀ são de sua inteira responsabilidade. Ou seja: Se a execução deste arquivo fazer seu computador
-#▀ sincronizar com a Skynet e começar o apocalipse, POR FAVOR pare tudo e volte do início!
-#▀ Este script deve ser utilizado idealmente logo após uma instalação mínima do Debian.
-#▀
-#▀     --- SUMÁRIO ---
-#▀ 01 - Definição de Variáveis
-#▀   01.01 - Geral
-#▀   01.02 - Links
-#▀   01.03 - Escapes ANSI
-#▀   01.04 - Menus whiptail
-#▀   01.05 - Mensagens
-#▀ 02 - Definição de Funções
-#▀   02.01 - ScriptStatus
-#▀   02.02 - BasicSetup
-#▀   02.03 - InstallNginx
-#▀ 03 - Execução
-#▀   03.01 - Checagem por root
-#▀   03.02 - Execução de funções
-#▀
+#                                 Script de Instalação do Nginx
+#
+#        --- Nunca execute scripts da internet sem antes ler atentamente seu conteúdo! ---
+# Ofereço este script sem quaisquer garantias, todos os resultados (bons ou ruins) de sua execução
+# são de sua inteira responsabilidade. Ou seja: Se a execução deste arquivo fazer seu computador
+# sincronizar com a Skynet e começar o apocalipse, POR FAVOR pare tudo e volte do início!
+#
+#     --- SUMÁRIO ---
+# 01 - Definição de Variáveis
+#   01.01 - Geral
+#   01.02 - Links
+#   01.03 - Escapes ANSI
+#   01.04 - Menus whiptail
+#   01.05 - Mensagens
+# 02 - Definição de Funções
+#   02.01 - ScriptStatus
+#   02.02 - BasicSetup
+#   02.03 - InstallNginx
+#   02.04 - InstallCertBot
+# 03 - Execução
+#   03.01 - Checagem por root
+#   03.02 - Execução de funções
+#
 #▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄
 
 #==================================================================================================
@@ -38,6 +38,8 @@ RequiredPackages="curl gnupg2 ca-certificates lsb-release debian-archive-keyring
 UrlNginxGPG="https://nginx.org/keys/nginx_signing.key"
 UrlNginxStableRepo="https://nginx.org/packages/debian"
 UrlNginxMainlineRepo="https://nginx.org/packages/mainline/debian"
+UrlCloudflaredGPG="https://pkg.cloudflare.com/cloudflare-main.gpg"
+UrlCloudflaredRepo="https://pkg.cloudflare.com/cloudflared"
 
 # 01.03
 Underline="\033[4m"
@@ -95,7 +97,8 @@ MsgInstallPackages="$CBB[INFO]$CBY - Instalando pacotes mínimos necessários:\n
 MsgNginxGPG="$CBB[INFO]$CBY - Adicionando chave GPG do Nginx...$Reset\n"
 MsgNginxRepo="$CBB[INFO]$CBY - Adicionando repositório do Nginx...$Reset\n"
 MsgNginxInstall="$CBB[INFO]$CBY - Instalando pacotes do Nginx:\n\t nginx$Reset\n"
-MsgNginxEnable="$CBB[INFO]$CBY - Habilitando e iniciando serviço do Nginx...$Reset\n"
+MsgSnapInstall="$CBB[INFO]$CBY - Instalando Snap. Método oficial de instalar o Certbot$Reset\n"
+MsgCertbotInstall="$CBB[INFO]$CBY - Instalando Certbot$Reset\n"
 MsgDone="$CBG[SUCCESS]$CBY - Concluído!$Reset\n"
 
 #==================================================================================================
@@ -118,7 +121,7 @@ ScriptStatus() {
 # 02.02
 BasicSetup() {
 	printf "$MsgInstallPackages"
-	apt-get update >/dev/null && apt-get install -y $RequiredPackages >/dev/null
+	apt-get update >/dev/null && apt-get install -y $RequiredPackages
 }
 
 # 02.03
@@ -131,17 +134,22 @@ InstallNginx() {
 	# Repositório
 	printf "$MsgNginxRepo"
 	echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/nginx.gpg] $UrlNginxStableRepo \
-		 $(lsb_release -cs) nginx" >/etc/apt/sources.list.d/nginx.list
+		$(lsb_release -cs) nginx" >/etc/apt/sources.list.d/nginx.list
 	echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" >/etc/apt/preferences.d/99nginx
 
 	# Instalação
 	printf "$MsgNginxInstall"
-	apt-get update >/dev/null && apt-get install -y nginx >/dev/null
+	apt-get update >/dev/null && apt-get install -y nginx
+}
 
-	# Ativação
-	printf "$MsgNginxEnable"
-	systemctl enable ngnix
-	systemctl start ngnix
+# 02.04
+InstallCertBot() {
+	printf "$MsgSnapInstall"
+	apt-get update >/dev/null && apt-get install -y snapd
+
+	printf "$MsgCertbotInstall"
+	snap install --classic certbot
+	ln -s /snap/bin/certbot /usr/local/bin/certbot
 }
 
 #==================================================================================================
@@ -158,6 +166,7 @@ fi
 whiptail --title "$WtTitle" --msgbox "$WtWelcomeText" 12 80 --ok-button "$WtOkBtn"
 BasicSetup
 InstallNginx
+InstallCertBot
 
 EXIT_STATUS=$?
 if [ $EXIT_STATUS -eq 0 ]; then
