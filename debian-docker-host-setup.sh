@@ -2,38 +2,12 @@
 set -euo pipefail
 
 #▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄
+#▀
 #▀                     Script de Configuração do Debian como Host Docker
 #▀
 #▀        --- Nunca execute scripts da internet sem antes ler atentamente seu conteúdo! ---
-#▀ Ofereço este script sem quaisquer garantias, todos os resultados (bons ou ruins) de sua execução
-#▀ são de sua inteira responsabilidade. Ou seja: Se a execução deste arquivo fazer seu computador
-#▀ sincronizar com a Skynet e começar o apocalipse, POR FAVOR pare tudo e volte do início!
-#▀ Este script deve ser utilizado idealmente logo após uma instalação mínima do Debian.
 #▀
-#▀     --- SUMÁRIO ---
-#▀ 01 - Definição de Variáveis
-#▀   01.01 - Geral
-#▀   01.02 - Links
-#▀   01.03 - Escapes ANSI
-#▀   01.04 - Menus whiptail
-#▀   01.05 - Mensagens
-#▀ 02 - Definição de Funções
-#▀   02.01 - ScriptStatus
-#▀   02.02 - BasicSetup
-#▀   02.03 - ConfigureGrub
-#▀   02.04 - DisableDesktop
-#▀   02.05 - ConfigureSSH
-#▀   02.06 - InstallDocker
-#▀   02.07 - ConfigureDockerWorker
-#▀   02.08 - DisableNouveau
-#▀   02.09 - InstallNvidiaGpuDrivers
-#▀   02.10 - InstallNvidiaCT
-#▀   02.11 - InstallNVEncPatch
-#▀   02.12 - InstallAmdGpuDrivers
-#▀   02.13 - InstallIntelGpuDrivers
-#▀ 03 - Execução
-#▀   03.01 - Checagem por root
-#▀   03.02 - Execução de funções
+#▀    --- EXEMPLO ---
 #▀
 #▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄▀▄
 
@@ -41,7 +15,7 @@ set -euo pipefail
 #                                  01 - Definição de Variáveis
 #==================================================================================================
 
-# 1.01 - Geral
+# 1.01
 TimeZone="America/Sao_Paulo"
 RequiredPackages="build-essential dkms ca-certificates gnupg2 libxml2-utils linux-headers-$(uname -r) lsb-release nfs-common qemu-guest-agent git"
 DockerPackages="docker-buildx-plugin docker-ce docker-ce-cli docker-compose-plugin containerd.io"
@@ -56,7 +30,7 @@ DesktopMetaPackages=(
 	task-kde-desktop task-lxde-desktop task-mate-desktop task-xfce-desktop wayland xfce4 xorg xserver-xorg
 )
 
-# 1.02 - Links
+# 1.02
 UrlDockerGPG="https://download.docker.com/linux/debian/gpg"
 UrlDockerRepo="https://download.docker.com/linux/debian"
 UrlNvidia="https://www.nvidia.com/en-us/drivers/unix/"
@@ -64,7 +38,7 @@ UrlNvidiaGPG="https://nvidia.github.io/libnvidia-container/gpgkey"
 UrlNvidiaRepo="https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list"
 UrlNvencPatch="https://github.com/keylase/nvidia-patch"
 
-# 1.03 - Escapes ANSI e cores do whiptail
+# 1.03
 Underline="\033[4m"
 Reset="\033[0m"
 CBK="\033[1;30m"  #010101 Black
@@ -84,6 +58,7 @@ CBY="\033[1;93m"  #ffff00 Bright Yellow
 CBM="\033[1;95m"  #ff00ff Bright Magenta
 CBC="\033[1;96m"  #00ffff Bright Cyan
 
+# 1.04
 export NEWT_COLORS=
 export NEWT_COLORS='
 	root=,black
@@ -101,7 +76,6 @@ export NEWT_COLORS='
 	textbox=black,white
 '
 
-# 1.04 - Menus whiptail
 WtYBtn="SIM"
 WtNBtn="NÃO"
 WtOkBtn="CONTINUAR"
@@ -126,7 +100,7 @@ WtTitle6="Drivers de GPUs"
 WtInstallGPUDrivers="Deseja instalar e configurar drivers de GPUs?"
 WtRebootNow="É necessário reiniciar para aplicar o bloqueio do nouveau antes de instalar os drivers.\nO sistema irá reiniciar agora. Após iniciado, execute o script novamente para dar continuidade à configuração..."
 
-# 1.05 - Mensagens
+# 1.05
 MsgErrNotRoot="$CBR[ERROR]$CBY - Este script deve ser executado como root.$Reset\n"
 MsgUpdate="$CBB[INFO]$CBY - Checando pendências de atualizações do sistema (tenha paciência)...$Reset\n"
 MsgInstallPackages="$CBB[INFO]$CBY - Instalando pacotes mínimos necessários:\n\t$CBW$RequiredPackages$Reset\n"
@@ -274,7 +248,7 @@ InstallDocker() {
 ConfigureDockerWorker() {
 	# Criando usuário sem login, sem home e sem shell interativo, apenas para rodar os serviços que iniciarão os containers
 	printf "$MsgDockerUser"
-	useradd -r -s /usr/sbin/nologin -d /nonexistent -G docker $DockerWorkerUser
+	useradd -M -N -G docker -s /usr/sbin/nologin "$DockerWorkerUser"
 	printf "$MsgDockerUseradded"
 
 	# Pasta para realizar os bind mounts dos containers
@@ -403,13 +377,13 @@ InstallIntelGpuDrivers() {
 #                                    03 - Execução de Funções
 #==================================================================================================
 
-# 03.01 - Checagem por root
+# 03.01
 if [[ $EUID -ne 0 ]]; then
 	printf "$MsgErrNotRoot"
 	exit 1
 fi
 
-# 03.02 - Execução de funções
+# 03.02
 whiptail --title "$WtTitle" --msgbox "$WtWelcomeText" 12 80 --ok-button "$WtOkBtn"
 BasicSetup
 ConfigureGrub
